@@ -1,0 +1,8 @@
+ICD10_Code,PDPM_Category,NTA_Points,MDS_Field
+A02.24,Localized Salmonella Infections,2,I2500
+M86.051,Bone/Joint Infections,1,I8000
+D57.81,Systemic Hematologic,1,I0100
+M79.65,Musculoskeletal,0,NA
+S80.11,Injury/Trauma,0,NA
+R65.21,Systemic Infection/Sepsis,3,I8000
+L03.116,Cellulitis/Infection,1,I2500

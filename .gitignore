@@ -1,0 +1,26 @@
+# Environment
+venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# FAISS index and pickle caches (large binary files, regenerated at runtime)
+*.bin
+*.pkl
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Presentation
+presentation/
+
+# Temp files
+temp.md

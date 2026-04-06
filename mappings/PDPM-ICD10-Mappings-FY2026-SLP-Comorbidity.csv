@@ -1,0 +1,104 @@
+Mapping of Comorbidities Included in the PDPM SLP Component to ICD-10-CM Codes,,,
+Overview,,,
+No data,,,
+Sort Order,Comorbidity Description,ICD-10-CM Code,ICD-10-CM Code Description
+This is a filter cell,This is a filter cell,This is a filter cell,This is a filter cell
+1,ALS ,G12.21 ,Amyotrophic lateral sclerosis 
+2,Apraxia ,I69.090 ,Apraxia following nontraumatic subarachnoid hemorrhage 
+3,Apraxia ,I69.190 ,Apraxia following nontraumatic intracerebral hemorrhage 
+4,Apraxia ,I69.290 ,Apraxia following other nontraumatic intracranial hemorrhage 
+5,Apraxia ,I69.390 ,Apraxia following cerebral infarction 
+6,Apraxia ,I69.890 ,Apraxia following other cerebrovascular disease 
+7,Apraxia ,I69.990 ,Apraxia following unspecified cerebrovascular disease 
+8,Dysphagia ,I69.091 ,Dysphagia following nontraumatic subarachnoid hemorrhage 
+9,Dysphagia ,I69.191 ,Dysphagia following nontraumatic intracerebral hemorrhage 
+10,Dysphagia ,I69.291 ,Dysphagia following other nontraumatic intracranial hemorrhage 
+11,Dysphagia ,I69.391 ,Dysphagia following cerebral infarction 
+12,Dysphagia ,I69.891 ,Dysphagia following other cerebrovascular disease 
+13,Dysphagia ,I69.991 ,Dysphagia following unspecified cerebrovascular disease 
+14,Laryngeal Cancer ,C32.0 ,Malignant neoplasm of glottis 
+15,Laryngeal Cancer ,C32.1 ,Malignant neoplasm of supraglottis 
+16,Laryngeal Cancer ,C32.2 ,Malignant neoplasm of subglottis 
+17,Laryngeal Cancer ,C32.3 ,Malignant neoplasm of laryngeal cartilage 
+18,Laryngeal Cancer ,C32.8 ,Malignant neoplasm of overlapping sites of larynx 
+19,Laryngeal Cancer ,C32.9 ,"Malignant neoplasm of larynx, unspecified "
+20,Oral Cancers ,C00.0 ,Malignant neoplasm of external upper lip 
+21,Oral Cancers ,C00.1 ,Malignant neoplasm of external lower lip 
+22,Oral Cancers ,C00.2 ,"Malignant neoplasm of external lip, unspecified "
+23,Oral Cancers ,C00.3 ,"Malignant neoplasm of upper lip, inner aspect "
+24,Oral Cancers ,C00.4 ,"Malignant neoplasm of lower lip, inner aspect "
+25,Oral Cancers ,C00.5 ,"Malignant neoplasm of lip, unspecified, inner aspect "
+26,Oral Cancers ,C00.6 ,"Malignant neoplasm of commissure of lip, unspecified "
+27,Oral Cancers ,C00.8 ,Malignant neoplasm of overlapping sites of lip 
+28,Oral Cancers ,C00.9 ,"Malignant neoplasm of lip, unspecified "
+29,Oral Cancers ,C01 ,Malignant neoplasm of base of tongue 
+30,Oral Cancers ,C02.0 ,Malignant neoplasm of dorsal surface of tongue 
+31,Oral Cancers ,C02.1 ,Malignant neoplasm of border of tongue 
+32,Oral Cancers ,C02.2 ,Malignant neoplasm of ventral surface of tongue 
+33,Oral Cancers ,C02.3 ,"Malignant neoplasm of anterior two-thirds of tongue, part unspecified "
+34,Oral Cancers ,C02.4 ,Malignant neoplasm of lingual tonsil 
+35,Oral Cancers ,C02.8 ,Malignant neoplasm of overlapping sites of tongue 
+36,Oral Cancers ,C02.9 ,"Malignant neoplasm of tongue, unspecified "
+37,Oral Cancers ,C03.0 ,Malignant neoplasm of upper gum 
+38,Oral Cancers ,C03.1 ,Malignant neoplasm of lower gum 
+39,Oral Cancers ,C03.9 ,"Malignant neoplasm of gum, unspecified "
+40,Oral Cancers ,C04.0 ,Malignant neoplasm of anterior floor of mouth 
+41,Oral Cancers ,C04.1 ,Malignant neoplasm of lateral floor of mouth 
+42,Oral Cancers ,C04.8 ,Malignant neoplasm of overlapping sites of floor of mouth 
+43,Oral Cancers ,C04.9 ,"Malignant neoplasm of floor of mouth, unspecified "
+44,Oral Cancers ,C05.0 ,Malignant neoplasm of hard palate 
+45,Oral Cancers ,C05.1 ,Malignant neoplasm of soft palate 
+46,Oral Cancers ,C05.2 ,Malignant neoplasm of uvula 
+47,Oral Cancers ,C05.8 ,Malignant neoplasm of overlapping sites of palate 
+48,Oral Cancers ,C05.9 ,"Malignant neoplasm of palate, unspecified "
+49,Oral Cancers ,C06.0 ,Malignant neoplasm of cheek mucosa 
+50,Oral Cancers ,C06.1 ,Malignant neoplasm of vestibule of mouth 
+51,Oral Cancers ,C06.2 ,Malignant neoplasm of retromolar area 
+52,Oral Cancers ,C06.80 ,Malignant neoplasm of overlapping sites of unspecified parts of mouth 
+53,Oral Cancers ,C06.89 ,Malignant neoplasm of overlapping sites of other parts of mouth 
+54,Oral Cancers ,C06.9 ,"Malignant neoplasm of mouth, unspecified "
+55,Oral Cancers ,C09.0 ,Malignant neoplasm of tonsillar fossa 
+56,Oral Cancers ,C09.1 ,Malignant neoplasm of tonsillar pillar (anterior) (posterior) 
+57,Oral Cancers ,C09.8 ,Malignant neoplasm of overlapping sites of tonsil 
+58,Oral Cancers ,C09.9 ,"Malignant neoplasm of tonsil, unspecified "
+59,Oral Cancers ,C10.0 ,Malignant neoplasm of vallecula 
+60,Oral Cancers ,C10.1 ,Malignant neoplasm of anterior surface of epiglottis 
+61,Oral Cancers ,C10.2 ,Malignant neoplasm of lateral wall of oropharynx 
+62,Oral Cancers ,C10.3 ,Malignant neoplasm of posterior wall of oropharynx 
+63,Oral Cancers ,C10.4 ,Malignant neoplasm of branchial cleft 
+64,Oral Cancers ,C10.8 ,Malignant neoplasm of overlapping sites of oropharynx 
+65,Oral Cancers ,C10.9 ,"Malignant neoplasm of oropharynx, unspecified "
+66,Oral Cancers ,C14.0 ,"Malignant neoplasm of pharynx, unspecified "
+67,Oral Cancers ,C14.2 ,Malignant neoplasm of Waldeyer's ring 
+68,Oral Cancers ,C14.8 ,"Malignant neoplasm of overlapping sites of lip, oral cavity and pharynx "
+69,Speech and Language Deficits ,I69.020 ,Aphasia following nontraumatic subarachnoid hemorrhage 
+70,Speech and Language Deficits ,I69.021 ,Dysphasia following nontraumatic subarachnoid hemorrhage 
+71,Speech and Language Deficits ,I69.022 ,Dysarthria following nontraumatic subarachnoid hemorrhage 
+72,Speech and Language Deficits ,I69.023 ,Fluency disorder following nontraumatic subarachnoid hemorrhage 
+73,Speech and Language Deficits ,I69.028 ,Other speech and language deficits following nontraumatic subarachnoid hemorrhage 
+74,Speech and Language Deficits ,I69.120 ,Aphasia following nontraumatic intracerebral hemorrhage 
+75,Speech and Language Deficits ,I69.121 ,Dysphasia following nontraumatic intracerebral hemorrhage 
+76,Speech and Language Deficits ,I69.122 ,Dysarthria following nontraumatic intracerebral hemorrhage 
+77,Speech and Language Deficits ,I69.123 ,Fluency disorder following nontraumatic intracerebral hemorrhage 
+78,Speech and Language Deficits ,I69.128 ,Other speech and language deficits following nontraumatic intracerebral hemorrhage 
+79,Speech and Language Deficits ,I69.220 ,Aphasia following other nontraumatic intracranial hemorrhage 
+80,Speech and Language Deficits ,I69.221 ,Dysphasia following other nontraumatic intracranial hemorrhage 
+81,Speech and Language Deficits ,I69.222 ,Dysarthria following other nontraumatic intracranial hemorrhage 
+82,Speech and Language Deficits ,I69.223 ,Fluency disorder following other nontraumatic intracranial hemorrhage 
+83,Speech and Language Deficits ,I69.228 ,Other speech and language deficits following other nontraumatic intracranial hemorrhage 
+84,Speech and Language Deficits ,I69.320 ,Aphasia following cerebral infarction 
+85,Speech and Language Deficits ,I69.321 ,Dysphasia following cerebral infarction 
+86,Speech and Language Deficits ,I69.322 ,Dysarthria following cerebral infarction 
+87,Speech and Language Deficits ,I69.323 ,Fluency disorder following cerebral infarction 
+88,Speech and Language Deficits ,I69.328 ,Other speech and language deficits following cerebral infarction 
+89,Speech and Language Deficits ,I69.820 ,Aphasia following other cerebrovascular disease 
+90,Speech and Language Deficits ,I69.821 ,Dysphasia following other cerebrovascular disease 
+91,Speech and Language Deficits ,I69.822 ,Dysarthria following other cerebrovascular disease 
+92,Speech and Language Deficits ,I69.823 ,Fluency disorder following other cerebrovascular disease 
+93,Speech and Language Deficits ,I69.828 ,Other speech and language deficits following other cerebrovascular disease 
+94,Speech and Language Deficits ,I69.920 ,Aphasia following unspecified cerebrovascular disease 
+95,Speech and Language Deficits ,I69.921 ,Dysphasia following unspecified cerebrovascular disease 
+96,Speech and Language Deficits ,I69.922 ,Dysarthria following unspecified cerebrovascular disease 
+97,Speech and Language Deficits ,I69.923 ,Fluency disorder following unspecified cerebrovascular disease 
+98,Speech and Language Deficits ,I69.928 ,Other speech and language deficits following unspecified cerebrovascular disease 
+End of worksheet,,,

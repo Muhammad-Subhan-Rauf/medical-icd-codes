@@ -1,0 +1,8 @@
+pandas
+faiss-cpu
+pydantic
+google-genai
+python-dotenv
+streamlit
+sentence-transformers
+pymupdf
