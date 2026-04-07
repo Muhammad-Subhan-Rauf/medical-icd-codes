@@ -24,3 +24,9 @@ presentation/
 
 # Temp files
 temp.md
+
+eval_results/
+Patients_with_MDS_Experts/
+
+# ICD-10 rules data (CMS XML, large files, downloaded at setup)
+icd10_rules_data/

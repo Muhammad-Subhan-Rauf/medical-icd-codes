@@ -39,7 +39,7 @@ def _ocr_page_with_gemini(page, page_num: int, filename: str) -> str | None:
         img_b64 = base64.b64encode(img_bytes).decode("utf-8")
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-flash-lite",
             contents=[
                 {
                     "parts": [

@@ -193,56 +193,22 @@ STRICT RULES — VIOLATION OF ANY RULE IS UNACCEPTABLE:
 6. PRESERVE ALL ORIGINAL INFORMATION. Every fact from the original note must appear in the output. Do not drop or omit anything.
 
 TASK 1 — EXPAND ABBREVIATIONS:
-Convert medical shorthand to full terminology. Common examples:
-- "HTN" → "hypertension", "DM2" → "type 2 diabetes mellitus", "DM1" → "type 1 diabetes mellitus"
-- "CAD" → "coronary artery disease", "CHF" → "congestive heart failure", "COPD" → "chronic obstructive pulmonary disease"
-- "CKD" → "chronic kidney disease", "ESRD" → "end-stage renal disease", "AKI" → "acute kidney injury"
-- "AFib" → "atrial fibrillation", "DVT" → "deep vein thrombosis", "PE" → "pulmonary embolism"
-- "UTI" → "urinary tract infection", "AMS" → "altered mental status", "SOB" → "shortness of breath"
-- "s/p" → "status post", "p/w" → "presents with", "hx" → "history of", "w/" → "with", "w/o" → "without"
-- "yo" → "year-old", "M" → "male", "F" → "female", "pt" → "patient"
-- "CABG" → "coronary artery bypass graft", "TKA" → "total knee arthroplasty", "THA" → "total hip arthroplasty"
-- "BID" → "twice daily", "TID" → "three times daily", "QHS" → "every night at bedtime", "PRN" → "as needed"
-- "Cr" → "creatinine", "WBC" → "white blood cell count", "HgA1c"/"HbA1c" → "hemoglobin A1c"
-- "BMP" → "basic metabolic panel", "CBC" → "complete blood count"
-Log each expansion in abbreviations_expanded as "ABBR -> Full Term".
+Convert ALL medical shorthand, acronyms, and abbreviations to their full standard medical terminology.
+Use your clinical knowledge to interpret abbreviations in context. Log each expansion in abbreviations_expanded as "ABBR -> Full Term".
 
 TASK 2 — STRUCTURE INTO SECTIONS:
-Organize the content into standard clinical sections. Only create sections that have content in the original note:
-- History of Present Illness (HPI)
-- Past Medical History (PMH)
-- Medications
-- Laboratory Values
-- Assessment and Plan
-- Physical Examination
-- Social History
-- Review of Systems
-- Procedures/Surgical History
-- Discharge Diagnoses
-If the original note does not clearly separate sections, infer section placement from content type.
+Organize the content into standard clinical sections (HPI, PMH, Medications, Labs, Assessment/Plan, Physical Exam, Social History, ROS, Procedures/Surgical History, Discharge Diagnoses, etc.).
+Only create sections that have content in the original note. If the original note does not clearly separate sections, infer section placement from content type.
 
 TASK 3 — NORMALIZE TERMINOLOGY:
-Use standard medical terminology compatible with ICD-10-CM coding conventions.
-Examples: "sugar disease" → "diabetes mellitus", "water pill" → "diuretic", "blood thinner" → "anticoagulant"
+Convert lay terms, colloquialisms, and non-standard medical language to standard ICD-10-CM compatible medical terminology.
 
 TASK 4 — INFER IMPLIED CONDITIONS:
-Infer conditions from medications and lab values ONLY when the implication is clinically standard:
-HIGH confidence (always infer):
-- metformin → type 2 diabetes mellitus
-- insulin (with type 2 context) → type 2 diabetes mellitus
-- lisinopril/losartan/amlodipine → hypertension
-- atorvastatin/rosuvastatin/simvastatin → hyperlipidemia
-- levothyroxine → hypothyroidism
-- warfarin/apixaban/rivaroxaban → condition requiring anticoagulation
-- furosemide → fluid overload or heart failure
-- HgA1c/HbA1c > 6.5% → diabetes mellitus
-MODERATE confidence (infer but note uncertainty):
-- albuterol/ipratropium → asthma or COPD (flag ambiguity in warnings)
-- elevated creatinine → acute or chronic kidney disease
-- WBC > 11,000 → possible infection or leukocytosis
-- low hemoglobin → anemia
-LOW confidence (infer with strong caveat):
-- elevated BNP → possible heart failure
+Infer conditions from medications and lab values ONLY when the clinical implication is standard and well-established.
+- For each medication, consider what condition it is most commonly prescribed for.
+- For abnormal lab values, consider what clinical condition they indicate.
+- Rate each inference as HIGH, MODERATE, or LOW confidence based on how directly the evidence implies the condition.
+- Do NOT infer conditions from lab values that are noted as artifactual, hemolyzed, or unreliable.
 Include inferred conditions in the relevant section text AND list each in inferred_conditions.
 
 TASK 5 — MERGED NOTE:
@@ -325,7 +291,8 @@ def validate_extractions(conditions: list[ExtractedCondition],
 # STEP 1: EXTRACT ALL CONDITIONS (single LLM call)
 # -------------------------------------------------------------
 
-def extract_all_conditions(note: str, sections: list[dict] = None) -> ExtractedConditions:
+def extract_all_conditions(note: str, sections: list[dict] = None,
+                           already_extracted: list[str] = None) -> ExtractedConditions:
     client = _get_client()
 
     # Format sections for the prompt
@@ -336,8 +303,18 @@ def extract_all_conditions(note: str, sections: list[dict] = None) -> ExtractedC
     else:
         formatted_sections = note
 
-    prompt = f"""You are an expert medical coder. Extract EVERY medical condition, diagnosis, comorbidity, and clinical finding from this clinical note.
+    # Build context of already-extracted conditions (for batched processing)
+    already_extracted_text = ""
+    if already_extracted:
+        already_extracted_text = f"""
+ALREADY EXTRACTED (from previous pages) — DO NOT re-extract these conditions.
+Only extract NEW conditions not already in this list:
+{chr(10).join(f'- {c}' for c in already_extracted)}
 
+"""
+
+    prompt = f"""You are an expert medical coder. Extract EVERY medical condition, diagnosis, comorbidity, and clinical finding from this clinical note.
+{already_extracted_text}
 ICD-10-CM TERMINOLOGY REFERENCE — align your extracted condition names with these standard categories:
 {ICD10_CHAPTERS}
 
@@ -351,41 +328,33 @@ INSTRUCTIONS:
   * severity: severity or stage (e.g., "stage 3", "moderate", "severe", "mild"). Use null if not specified.
   * episode: episode of care (e.g., "initial encounter", "subsequent encounter", "sequela"). Use null if not specified.
 - Categorize each as: "acute" (new/active), "chronic" (ongoing), "historical" (resolved/past), or "incidental" (found but not treated).
+- Be STRICT about "historical" — use this category for:
+  * Conditions prefixed with "history of", "h/o", "status post", "s/p", "prior", "previous", "old"
+  * Conditions in the Past Medical History that are no longer active or treated
+  * Resolved conditions (e.g., "AKI resolved", "fracture healed", "infection cleared")
+  * Conditions from years ago with no current treatment (e.g., "pancreatitis 2007", "seizure-like activity")
+  * Healed surgical procedures (e.g., "prior hip replacement", "appendectomy 2010")
+- Only categorize as "chronic" if the condition is CURRENTLY being managed with medications or ongoing monitoring.
 - Be thorough — capture every condition mentioned, even if only in the past medical history or problem list.
-- Include conditions like deconditioning, obesity, hypertension, etc. that may seem minor but are billable.
+- Include conditions that may seem minor but are billable (functional limitations, nutritional disorders, chronic pain, etc.).
 
-MEDICATION-IMPLIED CONDITIONS — extract these even if not explicitly stated as diagnoses:
-- Patient on metformin/insulin → type 2 diabetes mellitus
-- Patient on lisinopril/losartan/amlodipine → hypertension
-- Patient on atorvastatin/simvastatin → hyperlipidemia
-- Patient on levothyroxine → hypothyroidism
-- Patient on albuterol → asthma or COPD
-- Patient on warfarin/apixaban → condition requiring anticoagulation (e.g., atrial fibrillation, DVT history)
-- Patient on furosemide → fluid overload or heart failure
+MEDICATION-IMPLIED CONDITIONS:
+- If a patient is on a medication that treats a specific condition, and no other reason for that medication is documented, extract the implied condition.
+- Use your clinical knowledge to infer the most likely condition from each medication class.
+- Mark medication-implied conditions with source_section: "Medications".
 
-LAB-IMPLIED CONDITIONS — extract these when lab values clearly indicate a condition:
-- HgA1c/HbA1c > 6.5% → diabetes mellitus
-- Elevated creatinine → acute kidney injury or chronic kidney disease
-- WBC > 11,000 → leukocytosis or active infection
-- Low hemoglobin → anemia
+LAB-IMPLIED CONDITIONS:
+- Extract conditions when lab values are clearly outside normal range AND clinically significant.
+- Do NOT extract conditions from lab values that are noted as artifactual, hemolyzed, contaminated, or otherwise unreliable.
+- Do NOT extract conditions from borderline values that normalized without treatment.
 
-ABBREVIATION HANDLING — if any abbreviations remain unexpanded, expand them:
-- HTN → hypertension, DM2 → type 2 diabetes mellitus, CAD → coronary artery disease
-- CHF → congestive heart failure, COPD → chronic obstructive pulmonary disease
-- CKD → chronic kidney disease, ESRD → end-stage renal disease, AFib → atrial fibrillation
-- DVT → deep vein thrombosis, PE → pulmonary embolism, AKI → acute kidney injury
+ABBREVIATION HANDLING:
+- Expand all medical abbreviations to their full terminology.
+- Use standard ICD-10-CM compatible terminology.
 
 NEGATION HANDLING — DO NOT extract negated conditions:
-- "Denies chest pain" → do NOT extract chest pain
-- "No evidence of malignancy" → do NOT extract malignancy
-- "Negative for DVT" → do NOT extract DVT
+- Phrases like "denies", "no evidence of", "negative for", "ruled out", "absent" indicate the condition is NOT present.
 - Only extract conditions that are PRESENT, ACTIVE, HISTORICAL, or INCIDENTAL — never negated ones.
-
-EXAMPLES:
-- "Septic shock secondary to left lower extremity cellulitis" → condition: "Septic shock secondary to cellulitis", category: "acute", body_site: "left lower extremity", laterality: "left"
-- "Stage 3 chronic kidney disease" → condition: "Chronic kidney disease", category: "chronic", severity: "stage 3", body_site: "kidney"
-- "Stage II acute kidney injury, resolved" → condition: "Acute kidney injury", category: "historical", severity: "stage II"
-- "Initial encounter for right hip fracture" → condition: "Hip fracture", category: "acute", body_site: "hip", laterality: "right", episode: "initial encounter"
 
 CLINICAL NOTE (by section):
 {formatted_sections}"""
@@ -468,57 +437,80 @@ def step_3_final_ranker(note: str, validated_codes: list[dict]) -> FinalCodingRe
 
 TASK: Review the candidate ICD-10-CM codes matched by vector similarity. Include each code that is supported by the clinical note. REMOVE any code that does NOT have clear clinical evidence or that violates ICD-10-CM coding conventions below.
 
-=== ICD-10-CM CODING CONVENTIONS (MUST FOLLOW) ===
+=== ICD-10-CM OFFICIAL CODING GUIDELINES (MUST FOLLOW) ===
 
-SYMPTOM EXCLUSION RULE:
-Do NOT include symptom codes (R00-R99 chapter, or pain/weakness codes) when the underlying diagnosis that causes the symptom is already coded. Examples:
-- Do NOT code "shortness of breath" (R06.02) if respiratory failure (J96.x) or COPD (J44.x) is coded
-- Do NOT code "leg pain" (M79.6x) if cellulitis (L03.x) of the same site is coded
-- Do NOT code "hypotension" (I95.x) if septic shock (R65.21) is coded
-- Do NOT code "elevated WBC" (D72.8x) or other lab findings as standalone diagnoses when the infection causing them is coded
-- Do NOT code "fever" (R50.x) if the underlying infection is coded
-Exception: Include symptom codes ONLY if no underlying diagnosis in the final code list explains them.
+1. SYMPTOM EXCLUSION:
+   - Do NOT code symptoms when the underlying diagnosis explaining that symptom is already coded.
+   - Do NOT code abnormal lab findings as standalone diagnoses when the condition causing them is coded.
+   - Include symptom codes ONLY when no underlying diagnosis in the final code list explains them.
 
-SEPSIS SEQUENCING RULE:
-When coding severe sepsis (R65.20) or septic shock (R65.21), you MUST also include:
-- The underlying systemic infection code (e.g., A41.9 Sepsis, unspecified organism)
-- The code for the localized infection that caused the sepsis (e.g., L03.116 Cellulitis of left lower limb)
-Sepsis codes are never coded alone — they require the full causal chain.
+2. MANDATORY SEQUENCING ("Code First" / "Code Also" / "Use Additional Code"):
+   - When ICD-10-CM requires dual or multiple coding for a condition, you MUST include ALL required codes.
+   - Etiology/manifestation pairs require BOTH codes — the underlying disease AND the manifestation.
+   - Conditions with behavioral or functional manifestations require the underlying disease code PLUS the manifestation code.
+   - Sepsis and severe sepsis/septic shock require the full causal chain: the systemic infection, the localized source, and the severity code.
+   - Always follow the sequencing order specified by coding conventions.
 
-WOUND CODING RULE:
-When clinical notes document wounds, ulcers, or skin lesions, code them with maximum specificity:
-- Include the specific anatomical site (foot, toe, ankle, lower leg, etc.)
-- Include laterality (left/right)
-- Include depth/severity if documented (e.g., limited to breakdown of skin, with fat layer exposed)
-- Infected wounds need BOTH the wound code AND the infection code
-- Non-pressure ulcers of the lower extremity use L97.x codes with full site specificity
-- Foot infections are coded separately from leg cellulitis when documented
+3. SPECIFICITY — ALWAYS CODE TO THE HIGHEST LEVEL OF DETAIL:
+   - Use the most specific code available based on the documentation.
+   - Include laterality (left/right/bilateral) when documented.
+   - Include anatomical site when documented.
+   - Include severity, stage, or type when documented.
+   - Include episode of care (initial encounter, subsequent encounter, sequela) when applicable.
+   - Combination codes: When a single code captures both the condition and its complication or manifestation, use the combination code instead of two separate codes.
 
-COMPLETENESS CHECK:
-After reviewing the candidate codes, scan the ENTIRE clinical note for common chronic conditions documented anywhere (PMH, problem list, medication list, HPI) that may NOT be in the candidate list. If clearly documented, ADD them even though they are not in the candidate codes. Common conditions to check for:
-- Hypertension (I10)
-- Type 2 Diabetes Mellitus (E11.9 or more specific)
-- Hyperlipidemia (E78.5 or more specific)
-- Obesity (E66.x)
-- CKD stages (N18.x)
-- Hypothyroidism (E03.9)
-- GERD (K21.0)
-You may add codes not in the candidate list if they have CLEAR documentation in the note.
+4. WOUND AND INJURY CODING:
+   - Code wounds, ulcers, and skin lesions with maximum specificity: site, laterality, depth, and stage.
+   - Infected wounds require BOTH the wound code AND the infection code.
+   - Verify laterality carefully — confirm left vs right from the clinical documentation.
 
-CONFIDENCE THRESHOLD:
-Only include codes with DEFINITE or PROBABLE documentation. Do NOT code conditions described as "possible", "suspected", "concern for", "rule out", or "cannot exclude" UNLESS:
-- The condition was actively treated (e.g., antibiotics given for "possible diverticulitis" = code it)
-- ICD-10 inpatient coding guidelines explicitly apply (uncertain diagnoses coded as if confirmed for inpatient stays)
-If documentation is speculative AND no treatment was directed at it, do NOT include it.
+5. LAB VALUE CODING:
+   - Only code abnormal lab values as diagnoses when they are clinically significant AND acknowledged by the provider.
+   - Do NOT code lab artifacts (e.g., hemolyzed specimens, lipemic samples, contaminated cultures).
+   - If the note states a result is spurious, artifactual, or unreliable, do NOT code it.
+   - Transient lab abnormalities that normalized without treatment may not warrant a code.
+
+6. HISTORICAL vs ACTIVE CONDITIONS:
+   - Do NOT code conditions that are purely historical with no current clinical relevance:
+     * Conditions documented only as distant history with no ongoing treatment or monitoring
+     * Healed injuries, resolved infections, or completed treatments from years prior
+     * Prior surgeries — code the presence of implants/devices if applicable, but NOT the original condition that led to the surgery
+   - DO code historical conditions when they remain clinically relevant:
+     * Any condition the patient is CURRENTLY taking medication for
+     * Any condition being actively monitored with labs, imaging, or specialist visits
+     * Any condition that impacts current functional status, fall risk, or care planning
+     * Personal history codes (Z85-Z87 series) when the history affects current management
+     * Sequelae of prior conditions when residual effects persist (e.g., neurological deficits from a prior event)
+     * Chronic progressive conditions documented in PMH that do not resolve (e.g., degenerative diseases, bone density loss, vision disorders, cognitive disorders)
+
+7. COMPLETENESS CHECK:
+   - After reviewing the candidate codes, scan the ENTIRE clinical note for documented conditions that may not appear in the candidate list.
+   - Check PMH, problem lists, medication lists, and discharge diagnoses for conditions with clear documentation.
+   - You may add codes not in the candidate list if they have clear documentation in the note.
+   - Ensure medication-implied conditions are captured: if a patient is on a medication that treats a specific condition, and no other reason for that medication is documented, code the implied condition.
+
+8. CONFIDENCE THRESHOLD:
+   - Only include codes with DEFINITE or PROBABLE documentation.
+   - Do NOT code conditions described as "possible", "suspected", "concern for", "rule out", or "cannot exclude" UNLESS the condition was actively treated.
+   - For inpatient stays: uncertain diagnoses may be coded as if confirmed per ICD-10-CM inpatient guidelines.
+   - If documentation is speculative AND no treatment was directed at it, do NOT include it.
+
+9. EXCLUDES NOTES AND CODE CONFLICTS:
+   - Do not assign two codes that are mutually exclusive per ICD-10-CM Excludes1 notes.
+   - Do not assign redundant codes when one code fully encompasses another.
+
+10. EXTERNAL CAUSE AND STATUS CODES:
+    - Include external cause codes when the documentation describes how an injury or condition occurred.
+    - Include status codes (presence of implants, devices, transplants) when documented.
 
 === CLASSIFICATION RULES ===
 
 1. DESIGNATION (STRICT — READ CAREFULLY):
-   - "Primary": The SINGLE principal diagnosis that MOST DIRECTLY drove or occasioned the SNF admission. This is the ONE condition that is the primary reason the patient needs skilled nursing care. Almost always exactly ONE code is Primary.
-   - A second Primary is allowed ONLY if two conditions were truly co-equal, inseparable reasons for the SNF admission (extremely rare). A third Primary is virtually never appropriate.
-   - "Secondary": EVERYTHING else — all other active diagnoses, complications during the hospital stay, chronic comorbidities, historical conditions, and incidental findings.
-   - Complications that occurred DURING the hospital stay (e.g., AKI, pulmonary edema, respiratory failure) are ALWAYS Secondary — they are complications, not the reason for admission.
-   - Sequencing codes required by convention (e.g., A41.9 required alongside R65.21) are Secondary — they exist for coding compliance, not because they independently drove the admission.
+   - "Primary": The SINGLE principal diagnosis that MOST DIRECTLY drove or occasioned the admission. This is the ONE condition that is the primary reason the patient needs care. Almost always exactly ONE code is Primary.
+   - A second Primary is allowed ONLY if two conditions were truly co-equal, inseparable reasons for admission (extremely rare). A third Primary is virtually never appropriate.
+   - "Secondary": EVERYTHING else — all other active diagnoses, complications during the stay, chronic comorbidities, and incidental findings.
+   - Complications that occurred DURING the hospital stay are ALWAYS Secondary — they are complications, not the reason for admission.
+   - Sequencing codes required by convention are Secondary — they exist for coding compliance, not because they independently drove the admission.
    - When in doubt, designate as Secondary. Primary is the exception, not the rule.
 
 2. STATUS:
@@ -554,76 +546,157 @@ CANDIDATE CODES (from vector similarity search):
 
 
 # -------------------------------------------------------------
+# BATCH HELPERS
+# -------------------------------------------------------------
+
+def _split_note_into_batches(note: str, batch_size: int = 10) -> list[str]:
+    """Split a note with page markers into batches of `batch_size` pages.
+    If no page markers found, split by character count."""
+    import re
+    # Split on page markers: ---[filename pN]---
+    parts = re.split(r'(---\[.+? p\d+\]---)', note)
+    # Reconstruct pages: marker + content pairs
+    pages = []
+    for i, part in enumerate(parts):
+        if re.match(r'---\[.+? p\d+\]---', part):
+            content = parts[i + 1] if i + 1 < len(parts) else ""
+            pages.append(part + "\n" + content)
+
+    if not pages:
+        # No page markers — split by rough char limit (~15K per batch)
+        char_limit = 15000
+        batches = []
+        for i in range(0, len(note), char_limit):
+            batches.append(note[i:i + char_limit])
+        return batches
+
+    # Group pages into batches
+    batches = []
+    for i in range(0, len(pages), batch_size):
+        batch = "\n\n".join(pages[i:i + batch_size])
+        batches.append(batch)
+    return batches
+
+
+def _deduplicate_conditions(all_conditions: list[ExtractedCondition],
+                            similarity_threshold: float = 0.85) -> list[ExtractedCondition]:
+    """Deduplicate conditions using semantic similarity (embedding-based).
+
+    Two conditions are considered duplicates if their embedding cosine similarity
+    exceeds `similarity_threshold`. Keeps the first occurrence (which has
+    more context from earlier batches).
+    """
+    if not all_conditions:
+        return []
+
+    initialize_system()
+
+    # Build embedding queries for all conditions
+    queries = [build_embedding_query(c) for c in all_conditions]
+    vectors = _embedder.encode(queries, convert_to_numpy=True).astype("float32")
+    faiss.normalize_L2(vectors)
+
+    # Greedy dedup: iterate in order, skip any condition too similar to an already-kept one
+    kept_indices = []
+    kept_vectors = []
+    for i, vec in enumerate(vectors):
+        is_dup = False
+        if kept_vectors:
+            import numpy as np
+            kept_mat = np.stack(kept_vectors)
+            sims = kept_mat @ vec  # cosine similarities (vectors are normalized)
+            if sims.max() >= similarity_threshold:
+                is_dup = True
+        if not is_dup:
+            kept_indices.append(i)
+            kept_vectors.append(vec)
+
+    return [all_conditions[i] for i in kept_indices]
+
+
+# -------------------------------------------------------------
 # ORCHESTRATION PIPELINE
 # -------------------------------------------------------------
 
 def process_patient_note(note, top_k_per_condition=5, similarity_threshold=0.45,
-                          on_progress=None, page_chunks=None):
+                          on_progress=None, page_chunks=None, batch_size=10):
     """
-    Main pipeline orchestrator.
+    Main pipeline orchestrator with batched processing for large notes.
 
-    New architecture (2 LLM calls, rest programmatic):
-    1. LLM: Extract ALL conditions from note
-    2. Programmatic: FAISS code-level search per condition
-    3. LLM: Final ranking and classification
+    Architecture:
+    - For notes with page markers: split into batches of `batch_size` pages
+    - Each batch: refine + extract conditions (separate LLM calls)
+    - Merge + deduplicate conditions across batches
+    - FAISS code matching on merged conditions
+    - Final LLM ranking on candidate codes
     """
     initialize_system()
     logs = []
 
-    # Step 0: Refine clinical note
-    logs.append("Step 0: Refining clinical note (expand abbreviations, structure, normalize)...")
+    # Split into batches
+    batches = _split_note_into_batches(note, batch_size)
+    num_batches = len(batches)
+    logs.append(f"Note split into {num_batches} batch(es) of up to {batch_size} pages")
+
+    # Steps 0+1 per batch: Refine and extract conditions
+    all_conditions = []
+    all_refined_text_parts = []
     refined = None
-    try:
-        refined = refine_clinical_note(note)
-        refined_text = refined.merged_note
-        logs.append(f"  Refinement complete: {len(refined.sections)} sections")
-        if refined.abbreviations_expanded:
-            logs.append(f"  {len(refined.abbreviations_expanded)} abbreviations expanded:")
-            for abbr in refined.abbreviations_expanded:
-                logs.append(f"    {abbr}")
-        if refined.inferred_conditions:
-            logs.append(f"  {len(refined.inferred_conditions)} conditions inferred from meds/labs:")
-            for inf in refined.inferred_conditions:
-                logs.append(f"    {inf.condition} (from {inf.evidence_type}: {inf.evidence}, confidence: {inf.confidence})")
-        for warn in refined.warnings:
-            logs.append(f"  WARNING: {warn}")
-    except Exception as e:
-        logger.error("Clinical note refinement failed: %s", e, exc_info=True)
-        logs.append(f"WARNING: Note refinement failed ({e}), proceeding with raw note")
-        refined_text = note
-    if on_progress: on_progress(0.1)
 
-    # Step 1a: Parse sections deterministically
-    sections = parse_sections(refined_text)
-    logs.append(f"\nStep 1a: Parsed {len(sections)} sections: {[s['section_name'] for s in sections]}")
+    for batch_idx, batch_text in enumerate(batches):
+        batch_label = f"Batch {batch_idx + 1}/{num_batches}"
+        logs.append(f"\n{batch_label}: {len(batch_text)} chars")
 
-    # Step 1b: Extract ALL conditions (single LLM call, section-aware + structured)
-    logs.append("Step 1b: Extracting conditions (structured, section-aware)...")
-    try:
-        extracted = extract_all_conditions(refined_text, sections)
-    except Exception as e:
-        logger.error("Condition extraction failed: %s", e, exc_info=True)
+        # Step 0: Refine
+        batch_refined_text = batch_text
+        try:
+            batch_refined = refine_clinical_note(batch_text)
+            batch_refined_text = batch_refined.merged_note
+            if batch_idx == 0:
+                refined = batch_refined  # Keep first batch's refinement for metadata
+            logs.append(f"  {batch_label} refined: {len(batch_refined.sections)} sections")
+        except Exception as e:
+            logger.warning("%s refinement failed: %s, using raw text", batch_label, e)
+            logs.append(f"  {batch_label} refinement failed, using raw text")
+        all_refined_text_parts.append(batch_refined_text)
+
+        # Step 1: Parse sections + extract conditions (with cross-batch context)
+        sections = parse_sections(batch_refined_text)
+        already_names = [c.condition for c in all_conditions] if all_conditions else None
+        try:
+            extracted = extract_all_conditions(batch_refined_text, sections,
+                                               already_extracted=already_names)
+            all_conditions.extend(extracted.conditions)
+            logs.append(f"  {batch_label} extracted: {len(extracted.conditions)} new conditions")
+        except Exception as e:
+            logger.warning("%s extraction failed: %s", batch_label, e)
+            logs.append(f"  {batch_label} extraction failed: {e}")
+
+        if on_progress:
+            on_progress(0.1 + 0.3 * (batch_idx + 1) / num_batches)
+
+    if not all_conditions:
+        logs.append("ERROR: No conditions extracted from any batch.")
         if on_progress: on_progress(1.0)
-        return {"status": "failed", "logs": logs, "error": f"Condition extraction failed: {e}"}
+        return {"status": "failed", "logs": logs, "error": "No conditions extracted from any batch"}
 
-    logs.append(f"  Extracted {len(extracted.conditions)} conditions:")
-    for c in extracted.conditions:
-        fields = f"[{c.category}] {c.condition}"
-        if c.body_site:
-            fields += f" | site: {c.body_site}"
-        if c.laterality:
-            fields += f" | lat: {c.laterality}"
-        if c.severity:
-            fields += f" | sev: {c.severity}"
-        if c.source_section:
-            fields += f" | from: {c.source_section}"
-        logs.append(f"  {fields}")
-    if on_progress: on_progress(0.25)
+    # Deduplicate conditions across batches
+    before_dedup = len(all_conditions)
+    all_conditions = _deduplicate_conditions(all_conditions)
+    logs.append(f"\nMerged conditions: {before_dedup} total -> {len(all_conditions)} unique")
+
+    # Merge refined text for final ranking context
+    merged_refined = "\n\n".join(all_refined_text_parts)
+    # Cap merged text for the final ranker to avoid token limits
+    MAX_RANKER_CHARS = 100000
+    if len(merged_refined) > MAX_RANKER_CHARS:
+        logs.append(f"Truncating merged text from {len(merged_refined)} to {MAX_RANKER_CHARS} chars for final ranking")
+        merged_refined = merged_refined[:MAX_RANKER_CHARS]
 
     # Step 1c: Embed-back validation
     logs.append("\nStep 1c: Validating extraction quality via embedding check...")
-    validated_conditions = validate_extractions(extracted.conditions, _code_index, _embedder)
-    if on_progress: on_progress(0.35)
+    validated_conditions = validate_extractions(all_conditions, _code_index, _embedder)
+    if on_progress: on_progress(0.45)
 
     # Step 2: Programmatic code matching (zero LLM calls)
     logs.append(f"\nStep 2: Programmatic FAISS code search (top_k={top_k_per_condition}, threshold={similarity_threshold})...")
@@ -642,15 +715,30 @@ def process_patient_note(note, top_k_per_condition=5, similarity_threshold=0.45,
         if on_progress: on_progress(1.0)
         return {"status": "failed", "logs": logs, "error": "No codes matched above similarity threshold"}
 
-    # Step 3: Final LLM ranking (single LLM call)
+    # Cap candidates to avoid output token overflow
+    MAX_CANDIDATES = 80
+    if len(candidates) > MAX_CANDIDATES:
+        logs.append(f"Capping candidates from {len(candidates)} to {MAX_CANDIDATES} (by similarity score)")
+        candidates = candidates[:MAX_CANDIDATES]
+
+    # Step 3: Final LLM ranking (single LLM call, with retry on shorter note)
     logs.append(f"\nStep 3: LLM final ranking of {len(candidates)} candidates...")
-    try:
-        final_report = step_3_final_ranker(refined_text, candidates)
-    except Exception as e:
-        logger.error("Step 3 final ranker failed: %s", e, exc_info=True)
-        logs.append(f"ERROR: Final ranking failed: {e}")
+    final_report = None
+    for attempt, note_limit in enumerate([MAX_RANKER_CHARS, 50000, 25000]):
+        ranker_text = merged_refined[:note_limit]
+        try:
+            final_report = step_3_final_ranker(ranker_text, candidates)
+            if attempt > 0:
+                logs.append(f"  Succeeded on attempt {attempt + 1} with {note_limit} char note")
+            break
+        except Exception as e:
+            logs.append(f"  Attempt {attempt + 1} failed ({note_limit} chars): {e}")
+            logger.warning("Step 3 attempt %d failed: %s", attempt + 1, e)
+
+    if final_report is None:
+        logs.append("ERROR: Final ranking failed after all retry attempts")
         if on_progress: on_progress(1.0)
-        return {"status": "failed", "logs": logs, "error": str(e)}
+        return {"status": "failed", "logs": logs, "error": "Final ranking failed after retries"}
 
     logs.append(f"Final report: {len(final_report.ranked_codes)} codes")
     if on_progress: on_progress(0.8)
@@ -714,7 +802,7 @@ def process_patient_note(note, top_k_per_condition=5, similarity_threshold=0.45,
         "nta_summary": nta_summary,
         "qm_warnings": qm_warnings,
         "total_nta_points": nta_summary['total_nta_points'],
-        "extracted_conditions": [c.model_dump() for c in extracted.conditions],
+        "extracted_conditions": [c.model_dump() for c in all_conditions],
         "refinement": refined.model_dump() if refined else None,
         "raw_note": note,
     }
